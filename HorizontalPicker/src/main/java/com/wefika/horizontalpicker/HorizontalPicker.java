@@ -28,6 +28,7 @@ import android.text.Layout;
 import android.text.TextPaint;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
 import android.view.View;
@@ -369,9 +370,10 @@ public class HorizontalPicker extends View {
                 velocityTracker.computeCurrentVelocity(1000, mMaximumFlingVelocity);
                 int initialVelocityX = (int) velocityTracker.getXVelocity();
 
+                // if there was enough velocity to produce fling
                 if(mScrollingX && Math.abs(initialVelocityX) > mMinimumFlingVelocity) {
                     flingX(initialVelocityX);
-                } else {
+                } else { // else there was item click
                     float positionX = event.getX();
                     long deltaTime = event.getEventTime() - mLastDownEventTime;
                     if(!mScrollingX && deltaTime < ViewConfiguration.getTapTimeout()) {
@@ -379,12 +381,7 @@ public class HorizontalPicker extends View {
                         if(itemPos == 0) {
                             moveToPrev();
                         } else if(itemPos == 1) {
-
-                            if(mOnItemSelected != null) {
-                                mOnItemSelected.onItemSelected(getSelectedItem());
-                            }
-
-                            adjustToNearestItemX();
+                            selectItem();
                         } else {
                             moveToNext();
                         }
@@ -400,6 +397,7 @@ public class HorizontalPicker extends View {
                     mLeftEdgeEffect.onRelease();
                     mRightEdgeEffect.onRelease();
                 }
+                break;
 
             case MotionEvent.ACTION_CANCEL:
                 mPressedItem = -1;
@@ -411,9 +409,30 @@ public class HorizontalPicker extends View {
                 }
 
                 break;
+            case KeyEvent.KEYCODE_DPAD_CENTER:
         }
 
         return true;
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+
+        if (!isEnabled()) {
+            return super.onKeyDown(keyCode, event);
+        }
+
+        switch (keyCode) {
+            case KeyEvent.KEYCODE_DPAD_CENTER:
+                selectItem();
+                return true;
+            case KeyEvent.KEYCODE_ENTER:
+                selectItem();
+                return true;
+            default:
+                return super.onKeyDown(keyCode, event);
+        }
+
     }
 
     @Override
@@ -521,6 +540,14 @@ public class HorizontalPicker extends View {
     @Override
     protected void drawableStateChanged() {
         super.drawableStateChanged(); //TODO
+    }
+
+    private void selectItem() {
+        if(mOnItemSelected != null) {
+            mOnItemSelected.onItemSelected(getSelectedItem());
+        }
+
+        adjustToNearestItemX();
     }
 
     private void computeScrollX() {
